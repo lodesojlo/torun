@@ -9,8 +9,9 @@ import 'rigs/character_rig.dart';
 /// اللاعب الرئيسي
 /// - يدعم الصور (PNG) زي logo.png
 /// - يدعم الشخصيات الحقيقية (Kenney Sprites) مع أنيميشن
-/// - يدعم الهياكل العظمية (HumanRig / CarRig) القديمة
+/// - يدعم الهياكل العظمية (HumanRig / CarRig) مع تاج وعباءة
 /// - يدعم المظاهر (Skins) كطبقة توهج لونية
+/// - يدعم البيئات (Environments) بجاذبية وقفز مختلفين
 class Player {
   // ✅ الفيزياء
   double x = GameConstants.playerX;
@@ -25,6 +26,10 @@ class Player {
   bool isJumping = false;
   bool isDucking = false;
   bool isDead = false;
+
+  // ✅ مضاعفات البيئة
+  double gravityMultiplier = 1.0;
+  double jumpMultiplier = 1.0;
 
   // ✅ الأنيميشن
   double runFrame = 0;
@@ -46,9 +51,9 @@ class Player {
   Map<String, dynamic> skinData;
 
   // ✅ الأصول (3 أنماط)
-  CharacterRig? _rig;                // نمط 1: رسم بالكود
-  ui.Image? _image;                  // نمط 2: صورة PNG واحدة (logo)
-  final Map<String, ui.Image> _sprites = {}; // نمط 3: Sprite sheet
+  CharacterRig? _rig;
+  ui.Image? _image;
+  final Map<String, ui.Image> _sprites = {};
   bool _imageLoading = false;
   double _spriteScale = 1.0;
 
@@ -71,7 +76,7 @@ class Player {
   }
 
   // =============================================
-  // ✅ تحميل الشخصية (يدعم الأنماط الثلاثة)
+  // ✅ تحميل الشخصية
   // =============================================
 
   Future<void> _loadCharacter() async {
@@ -115,7 +120,6 @@ class Player {
       final prefix = characterData['spritePrefix'] as String;
       final path = characterData['spritePath'] as String;
 
-      // ✅ دعم poseMap (عشان الأسماء تختلف من pack لـ pack)
       final poseMap = characterData['poseMap'] as Map<String, dynamic>? ?? {
         'idle': 'idle',
         'run0': 'run0',
@@ -126,12 +130,21 @@ class Player {
         'hurt': 'hurt',
       };
 
-      for (final pose in ['idle', 'run0', 'run1', 'run2', 'jump', 'duck', 'hurt']) {
+      for (final pose in [
+        'idle',
+        'run0',
+        'run1',
+        'run2',
+        'jump',
+        'duck',
+        'hurt'
+      ]) {
         final fileName = poseMap[pose] as String? ?? pose;
         final assetPath = '$path${prefix}_$fileName.png';
         try {
           final data = await rootBundle.load(assetPath);
-          final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+          final codec =
+              await ui.instantiateImageCodec(data.buffer.asUint8List());
           final frame = await codec.getNextFrame();
           _sprites[pose] = frame.image;
         } catch (e) {
@@ -155,6 +168,14 @@ class Player {
         torsoRatio: (params['torsoRatio'] as num?)?.toDouble() ?? 0.38,
         legRatio: (params['legRatio'] as num?)?.toDouble() ?? 0.38,
         hasSkirt: params['hasSkirt'] as bool? ?? false,
+        hasCrown: params['hasCrown'] as bool? ?? false,
+        hasCape: params['hasCape'] as bool? ?? false,
+        crownColor: _parseHex(
+          params['crownColor'] as String? ?? '#FFD700',
+        ),
+        capeColor: _parseHex(
+          params['capeColor'] as String? ?? '#4A148C',
+        ),
       );
     }
     _imageLoading = false;
@@ -251,7 +272,7 @@ class Player {
   void jump() {
     if (!isJumping && !isDucking && !isDead) {
       isJumping = true;
-      velocityY = GameConstants.jumpForce;
+      velocityY = GameConstants.jumpForce * jumpMultiplier;
       squash = 1.3;
       jumpPhase = 0;
     }
@@ -272,7 +293,7 @@ class Player {
   void update() {
     if (isDead) return;
 
-    velocityY += GameConstants.gravity;
+    velocityY += GameConstants.gravity * gravityMultiplier;
     y += velocityY;
     jumpPhase += 0.3;
 
@@ -293,7 +314,6 @@ class Player {
     glowPhase += 0.15;
     rainbowPhase += 3;
 
-    // ✅ تحديث الـ Rig (لو موجود)
     _rig?.update(
       runPhase: runFrame,
       jumpPhase: jumpPhase,
@@ -357,6 +377,63 @@ class Player {
   }
 
   // =============================================
+  // ✅ رسم التاج فوق الـ Sprite
+  // =============================================
+  void _drawCrownAboveSprite(Canvas canvas, Rect spriteRect) {
+    final crownColorHex = characterData['crownColor'] as String? ?? '#FFD700';
+    final crownColor = _parseHex(crownColorHex);
+
+    // ✅ مكان التاج (فوق الرأس مباشرة)
+    final crownCx = spriteRect.center.dx;
+    final crownBaseY = spriteRect.top + spriteRect.height * 0.15;
+    final crownW = spriteRect.width * 0.5;
+    final crownH = spriteRect.height * 0.2;
+
+    final crownPaint = Paint()..color = crownColor;
+
+    // ✅ قاعدة التاج
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          crownCx - crownW / 2,
+          crownBaseY - crownH * 0.15,
+          crownW,
+          crownH * 0.25,
+        ),
+        const Radius.circular(2),
+      ),
+      crownPaint,
+    );
+
+    // ✅ 3 قمم للتاج
+    for (int i = -1; i <= 1; i++) {
+      final peakX = crownCx + i * crownW * 0.32;
+      final path = Path()
+        ..moveTo(peakX - crownW * 0.13, crownBaseY - crownH * 0.1)
+        ..lineTo(peakX, crownBaseY - crownH)
+        ..lineTo(peakX + crownW * 0.13, crownBaseY - crownH * 0.1)
+        ..close();
+      canvas.drawPath(path, crownPaint);
+    }
+
+    // ✅ جواهر على القمم
+    final gemColors = [
+      const Color(0xFFFF1744),
+      const Color(0xFF29B6F6),
+      const Color(0xFF00E676),
+    ];
+    final gemPaint = Paint();
+    for (int i = -1; i <= 1; i++) {
+      gemPaint.color = gemColors[i + 1];
+      canvas.drawCircle(
+        Offset(crownCx + i * crownW * 0.32, crownBaseY - crownH * 0.95),
+        crownH * 0.12,
+        gemPaint,
+      );
+    }
+  }
+
+  // =============================================
   // ✅ الرسم
   // =============================================
 
@@ -400,7 +477,7 @@ class Player {
       actualHeight,
     );
 
-    // ✅ Glow (من المظهر)
+    // ✅ Glow
     if (skinData['glow'] == true) {
       final pulse = (math.sin(glowPhase) + 1) / 2;
       for (int i = 4; i >= 1; i--) {
@@ -421,7 +498,7 @@ class Player {
     }
 
     // =============================================
-    // ✅ رسم الشخصية (حسب النمط)
+    // ✅ رسم الشخصية
     // =============================================
 
     if (_image != null) {
@@ -433,7 +510,8 @@ class Player {
         canvas.translate(-drawRect.center.dx, -drawRect.center.dy);
         canvas.drawImageRect(
           _image!,
-          Rect.fromLTWH(0, 0, _image!.width.toDouble(), _image!.height.toDouble()),
+          Rect.fromLTWH(
+              0, 0, _image!.width.toDouble(), _image!.height.toDouble()),
           drawRect,
           _imagePaint,
         );
@@ -441,7 +519,8 @@ class Player {
       } else {
         canvas.drawImageRect(
           _image!,
-          Rect.fromLTWH(0, 0, _image!.width.toDouble(), _image!.height.toDouble()),
+          Rect.fromLTWH(
+              0, 0, _image!.width.toDouble(), _image!.height.toDouble()),
           drawRect,
           _imagePaint,
         );
@@ -464,6 +543,11 @@ class Player {
         spriteRect,
         _imagePaint,
       );
+
+      // ✅ إضافة تاج فوق الـ Sprite (لو الشخصية ملكية)
+      if (characterData['hasCrown'] == true) {
+        _drawCrownAboveSprite(canvas, spriteRect);
+      }
     } else if (_rig != null) {
       // --- نمط 3: Rig ---
       _rig!.draw(canvas, drawRect, primaryColor, secondaryColor, skinColor);

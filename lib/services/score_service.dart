@@ -27,6 +27,7 @@ class ScoreService {
         'char_default', // ✅ الافتراضي (logo.png)
         'skin_classic',
         'bg_day',
+        'env_normal',
         'obs_cactus',
         'particles_none',
         'sounds_default',
@@ -37,6 +38,7 @@ class ScoreService {
         'character': 'char_default',
         'skin': 'skin_classic',
         'background': 'bg_day',
+        'environment': 'env_normal',
         'obstacles': 'obs_cactus',
         'particles': 'particles_none',
         'sounds': 'sounds_default',

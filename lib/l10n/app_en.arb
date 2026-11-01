@@ -93,5 +93,7 @@
   "powerUpSlowMotion": "🐢 Slow Motion",
   "million": "Million",
   "coinsShort": "coins",
-  "scoreDisplay": "Score"
+  "scoreDisplay": "Score",
+  "categoryEnvironments": "Environments",
+  "categoryWorlds": "Worlds"
 }

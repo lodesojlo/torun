@@ -4,34 +4,34 @@ import 'package:flutter/material.dart';
 class PowerUp {
   static const Map<String, Map<String, dynamic>> types = {
     'speed': {
-      'name': '⚡ سرعة',
+      'name': 'سرعة',
       'color': '#ffff00',
       'duration': 300,
-      'icon': '⚡',
+      'icon': 'flash_on',
     },
     'shield': {
-      'name': '🛡️ درع',
+      'name': 'درع',
       'color': '#00ffff',
       'duration': 400,
-      'icon': '🛡️',
+      'icon': 'shield',
     },
     'coin_magnet': {
-      'name': '💰 مغناطيس',
+      'name': 'مغناطيس',
       'color': '#ffcc00',
       'duration': 500,
-      'icon': '💰',
+      'icon': 'money',
     },
     'double_coins': {
-      'name': '✨ عملات مضاعفة',
+      'name': 'عملات مضاعفة',
       'color': '#ff00ff',
       'duration': 400,
-      'icon': '✨',
+      'icon': 'star',
     },
     'slow_motion': {
-      'name': '🐢 بطء الوقت',
+      'name': 'بطء الوقت',
       'color': '#88ff88',
       'duration': 300,
-      'icon': '🐢',
+      'icon': 'hourglass_bottom',
     },
   };
 
@@ -61,6 +61,24 @@ class PowerUp {
     return Color(int.parse(hex, radix: 16));
   }
 
+  // ✅ تحويل اسم الأيقونة لـ IconData
+  static IconData _getIconData(String name) {
+    switch (name) {
+      case 'flash_on':
+        return Icons.flash_on;
+      case 'shield':
+        return Icons.shield;
+      case 'money':
+        return Icons.monetization_on;
+      case 'star':
+        return Icons.star;
+      case 'hourglass_bottom':
+        return Icons.hourglass_bottom;
+      default:
+        return Icons.circle;
+    }
+  }
+
   void draw(Canvas canvas) {
     final floatOffset = math.sin(floatPhase) * 5;
     final centerX = x + size / 2;
@@ -88,23 +106,27 @@ class PowerUp {
       ..strokeWidth = 3;
     canvas.drawCircle(Offset(centerX, centerY), size / 2, borderPaint);
 
-    // ✅ Icon
-    final textPainter = TextPainter(
+    // ✅ الأيقونة (Material Icon بدل الإيموجي)
+    final iconData = _getIconData(data['icon'] as String);
+    final iconPainter = TextPainter(
       text: TextSpan(
-        text: data['icon'] as String,
+        text: String.fromCharCode(iconData.codePoint),
         style: TextStyle(
           fontSize: size * 0.55,
+          fontFamily: iconData.fontFamily,
+          package: iconData.fontPackage,
+          color: Colors.black87,
           height: 1,
         ),
       ),
       textDirection: TextDirection.ltr,
     );
-    textPainter.layout();
-    textPainter.paint(
+    iconPainter.layout();
+    iconPainter.paint(
       canvas,
       Offset(
-        centerX - textPainter.width / 2,
-        centerY - textPainter.height / 2,
+        centerX - iconPainter.width / 2,
+        centerY - iconPainter.height / 2,
       ),
     );
   }

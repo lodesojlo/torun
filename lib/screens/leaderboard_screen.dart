@@ -18,9 +18,16 @@ class LeaderboardScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: GameConstants.darkColor,
         foregroundColor: Colors.white,
-        title: Text(
-          '🏆 ${l10n.leaderboard}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.emoji_events, color: Color(0xFFFFC107), size: 24),
+            const SizedBox(width: 8),
+            Text(
+              l10n.leaderboard,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
       body: Padding(
@@ -40,14 +47,26 @@ class LeaderboardScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  Text(
-                    '🥇 ${l10n.highScore}',
-                    style: const TextStyle(
-                      color: GameConstants.secondaryColor,
-                      fontSize: 14,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.emoji_events,
+                        color: GameConstants.secondaryColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.highScore,
+                        style: const TextStyle(
+                          color: GameConstants.secondaryColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
                     '$highScore ${l10n.seconds}',
                     style: const TextStyle(
@@ -67,13 +86,33 @@ class LeaderboardScreen extends StatelessWidget {
             Expanded(
               child: leaderboard.isEmpty
                   ? Center(
-                      child: Text(
-                        '${l10n.noResultsYet}\n\n${l10n.startPlaying}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFFADB5BD),
-                          fontSize: 16,
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.leaderboard,
+                            size: 80,
+                            color: Colors.white.withValues(alpha: 0.3),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.noResultsYet,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Color(0xFFADB5BD),
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.startPlaying,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : ListView.separated(
@@ -81,48 +120,14 @@ class LeaderboardScreen extends StatelessWidget {
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (ctx, i) {
                         final entry = leaderboard[i];
-                        final rankEmoji = i < 5
-                            ? ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]
-                            : '${i + 1}.';
                         final dateStr =
                             _formatDate(entry['date'] as String? ?? '');
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F3460),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: i == 0
-                                  ? GameConstants.secondaryColor
-                                  : const Color(0xFF1E5A96),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Text(
-                                rankEmoji,
-                                style: const TextStyle(fontSize: 20),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                '${entry['score']} ${l10n.seconds}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                dateStr,
-                                style: const TextStyle(
-                                  color: Color(0xFFADB5BD),
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
+                        return _buildRankItem(
+                          rank: i + 1,
+                          score: entry['score'] as int? ?? 0,
+                          date: dateStr,
+                          l10n: l10n,
+                          isFirst: i == 0,
                         );
                       },
                     ),
@@ -133,6 +138,103 @@ class LeaderboardScreen extends StatelessWidget {
     );
   }
 
+  // =============================================
+  // ✅ بناء عنصر الرتبة (بدون إيموجي)
+  // =============================================
+  Widget _buildRankItem({
+    required int rank,
+    required int score,
+    required String date,
+    required AppLocalizations l10n,
+    required bool isFirst,
+  }) {
+    // ✅ لون + أيقونة حسب الرتبة
+    Color rankColor;
+    IconData? rankIcon;
+
+    switch (rank) {
+      case 1:
+        rankColor = const Color(0xFFFFD700); // ذهبي
+        rankIcon = Icons.emoji_events;
+        break;
+      case 2:
+        rankColor = const Color(0xFFC0C0C0); // فضي
+        rankIcon = Icons.emoji_events;
+        break;
+      case 3:
+        rankColor = const Color(0xFFCD7F32); // برونزي
+        rankIcon = Icons.emoji_events;
+        break;
+      default:
+        rankColor = const Color(0xFF6C757D);
+        rankIcon = null;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F3460),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isFirst
+              ? GameConstants.secondaryColor
+              : const Color(0xFF1E5A96),
+          width: isFirst ? 2 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // ✅ الرتبة (أيقونة أو رقم)
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: rankColor.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: rankColor.withValues(alpha: 0.5)),
+            ),
+            alignment: Alignment.center,
+            child: rankIcon != null
+                ? Icon(rankIcon, color: rankColor, size: 22)
+                : Text(
+                    '$rank',
+                    style: TextStyle(
+                      color: rankColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+          ),
+          const SizedBox(width: 12),
+
+          // ✅ النقاط
+          Expanded(
+            child: Text(
+              '$score ${l10n.seconds}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          // ✅ التاريخ
+          Text(
+            date,
+            style: const TextStyle(
+              color: Color(0xFFADB5BD),
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =============================================
+  // ✅ تنسيق التاريخ
+  // =============================================
   String _formatDate(String iso) {
     try {
       final date = DateTime.parse(iso);

@@ -271,4 +271,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get scoreDisplay => 'النتيجة';
+
+  @override
+  String get categoryEnvironments => 'البيئات';
+
+  @override
+  String get categoryWorlds => 'العوالم';
 }

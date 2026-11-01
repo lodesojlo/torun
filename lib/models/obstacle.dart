@@ -26,9 +26,8 @@ class Obstacle {
     this.scoreValue = 0,
     this.obstacleStyle = 'cactus',
   }) : type = _selectType(scoreValue, obstacleStyle) {
-    // ✅ صحة الأعداء
+    // ✅ صحة الأعداء حسب النوع
     if (obstacleStyle == 'platformer') {
-      // Platformer enemies: صحة مخصصة
       switch (type) {
         case 'slime':
           health = 1;
@@ -51,6 +50,38 @@ class Obstacle {
         default:
           health = 1;
       }
+    } else if (obstacleStyle == 'nature') {
+      switch (type) {
+        case 'bee':
+          health = 1;
+          break;
+        case 'bluefish':
+          health = 1;
+          break;
+        case 'frog':
+          health = 2;
+          break;
+        case 'ladybug':
+          health = 1;
+          break;
+        case 'mouse':
+          health = 2;
+          break;
+        case 'saw':
+          health = 3;
+          break;
+        case 'blockslime':
+          health = 2;
+          break;
+        case 'cactus_new':
+          health = 2;
+          break;
+        case 'cactus_new_large':
+          health = 3;
+          break;
+        default:
+          health = 1;
+      }
     } else if (type.contains('small')) {
       health = 1;
     } else if (type.contains('medium')) {
@@ -68,8 +99,37 @@ class Obstacle {
   static String _selectType(int score, String style) {
     Map<String, int> weights;
 
-    // ✅ Platformer enemies
-    if (style == 'platformer') {
+    // ✅ Nature style (جديد)
+    if (style == 'nature') {
+      if (score < 15) {
+        weights = {
+          'ladybug': 40,
+          'mouse': 30,
+          'frog': 30,
+        };
+      } else if (score < 35) {
+        weights = {
+          'ladybug': 25,
+          'mouse': 20,
+          'frog': 20,
+          'bee': 20,
+          'cactus_new': 15,
+        };
+      } else {
+        weights = {
+          'ladybug': 15,
+          'mouse': 15,
+          'frog': 15,
+          'bee': 15,
+          'bluefish': 15,
+          'saw': 10,
+          'blockslime': 10,
+          'cactus_new_large': 5,
+        };
+      }
+    }
+    // ✅ Platformer style (موجود)
+    else if (style == 'platformer') {
       if (score < 15) {
         weights = {
           'slime': 50,
@@ -92,7 +152,9 @@ class Obstacle {
           'blocker': 10,
         };
       }
-    } else if (style == 'cactus') {
+    }
+    // ✅ الأنماط القديمة
+    else if (style == 'cactus') {
       if (score < 10) {
         weights = {'cactus_small': 60, 'cactus_large': 40};
       } else if (score < 25) {
@@ -138,7 +200,59 @@ class Obstacle {
   void _setupType() {
     final rnd = math.Random();
 
-    // ✅ Platformer enemies (جديد)
+    // =============================================
+    // ✅ Nature enemies (جديد)
+    // =============================================
+    if (type == 'bee') {
+      width = 32;
+      height = 32;
+      y = groundY - [80.0, 110.0, 140.0][rnd.nextInt(3)];
+      return;
+    } else if (type == 'bluefish') {
+      width = 32;
+      height = 24;
+      y = groundY - [90.0, 120.0, 150.0][rnd.nextInt(3)];
+      return;
+    } else if (type == 'frog') {
+      width = 32;
+      height = 32;
+      y = groundY - height;
+      return;
+    } else if (type == 'ladybug') {
+      width = 32;
+      height = 24;
+      y = groundY - height;
+      return;
+    } else if (type == 'mouse') {
+      width = 32;
+      height = 24;
+      y = groundY - height;
+      return;
+    } else if (type == 'saw') {
+      width = 40;
+      height = 40;
+      y = groundY - height;
+      return;
+    } else if (type == 'blockslime') {
+      width = 32;
+      height = 32;
+      y = groundY - height;
+      return;
+    } else if (type == 'cactus_new') {
+      width = 32;
+      height = 48;
+      y = groundY - height;
+      return;
+    } else if (type == 'cactus_new_large') {
+      width = 64;
+      height = 96;
+      y = groundY - height;
+      return;
+    }
+
+    // =============================================
+    // ✅ Platformer enemies (موجود)
+    // =============================================
     if (type == 'slime') {
       width = 32;
       height = 24;
@@ -171,7 +285,9 @@ class Obstacle {
       return;
     }
 
-    // ✅ الأنماط القديمة (زي ما هي)
+    // =============================================
+    // ✅ الأنماط القديمة
+    // =============================================
     switch (type) {
       case 'cactus_small':
         width = 20;
@@ -234,15 +350,32 @@ class Obstacle {
   void update(double gameSpeed) {
     x -= gameSpeed;
 
-    // ✅ الأنيميشن
-    if (type == 'pterodactyl') {
+    // =============================================
+    // ✅ Nature animations
+    // =============================================
+    if (type == 'bee') {
       flapPhase += 0.3;
-    } else if (type.startsWith('drone')) {
-      hoverPhase += 0.15;
-    } else if (type.startsWith('rock')) {
-      rotation += rotationSpeed;
+      hoverPhase += 0.12;
+    } else if (type == 'bluefish') {
+      flapPhase += 0.2;
+      hoverPhase += 0.1;
+    } else if (type == 'frog') {
+      flapPhase += 0.1;
+    } else if (type == 'ladybug') {
+      flapPhase += 0.12;
+    } else if (type == 'mouse') {
+      flapPhase += 0.15;
+    } else if (type == 'saw') {
+      rotation += 0.15; // rotates continuously
+    } else if (type == 'blockslime') {
+      flapPhase += 0.12;
+    } else if (type == 'cactus_new' || type == 'cactus_new_large') {
+      // ثابت
     }
-    // ✅ Platformer animation
+
+    // =============================================
+    // ✅ Platformer animations
+    // =============================================
     else if (type == 'slime') {
       flapPhase += 0.15;
     } else if (type == 'snail') {
@@ -255,14 +388,34 @@ class Obstacle {
     } else if (type == 'blocker') {
       flapPhase += 0.1;
     }
+
+    // =============================================
+    // ✅ الأنماط القديمة
+    // =============================================
+    else if (type == 'pterodactyl') {
+      flapPhase += 0.3;
+    } else if (type.startsWith('drone')) {
+      hoverPhase += 0.15;
+    } else if (type.startsWith('rock')) {
+      rotation += rotationSpeed;
+    }
   }
 
   bool isOffscreen() => x + width < 0;
 
   Rect getRect() {
+    // ✅ Nature enemies
+    if (obstacleStyle == 'nature') {
+      if (type == 'bee' || type == 'bluefish') {
+        const padding = 4.0;
+        return Rect.fromLTWH(
+            x + padding, y + padding, width - padding * 2, height - padding * 2);
+      }
+      return Rect.fromLTWH(x, y, width, height);
+    }
+
     // ✅ Platformer enemies
     if (obstacleStyle == 'platformer') {
-      // padding بسيط لبعض الأنواع
       if (type == 'fly' || type == 'fish') {
         const padding = 4.0;
         return Rect.fromLTWH(
@@ -271,6 +424,7 @@ class Obstacle {
       return Rect.fromLTWH(x, y, width, height);
     }
 
+    // ✅ الأنماط القديمة
     if (type.startsWith('drone')) {
       const padding = 8.0;
       return Rect.fromLTWH(
@@ -284,26 +438,33 @@ class Obstacle {
   }
 
   void draw(Canvas canvas, bool isNight) {
-    // ✅ Platformer Sprites
-    if (obstacleStyle == 'platformer') {
-      _drawPlatformerSprite(canvas);
+    // =============================================
+    // ✅ Nature Sprites
+    // =============================================
+    if (obstacleStyle == 'nature') {
+      _drawNatureSprite(canvas);
 
-      // Health bar
       if (health < maxHealth) {
-        final healthRatio = health / maxHealth;
-        canvas.drawRect(
-          Rect.fromLTWH(x, y - 10, width, 4),
-          Paint()..color = const Color(0xFFFF0000),
-        );
-        canvas.drawRect(
-          Rect.fromLTWH(x, y - 10, width * healthRatio, 4),
-          Paint()..color = const Color(0xFF00FF00),
-        );
+        _drawHealthBar(canvas);
       }
       return;
     }
 
+    // =============================================
+    // ✅ Platformer Sprites
+    // =============================================
+    if (obstacleStyle == 'platformer') {
+      _drawPlatformerSprite(canvas);
+
+      if (health < maxHealth) {
+        _drawHealthBar(canvas);
+      }
+      return;
+    }
+
+    // =============================================
     // ✅ الأنماط القديمة
+    // =============================================
     Color color;
     switch (obstacleStyle) {
       case 'rocks':
@@ -348,17 +509,104 @@ class Obstacle {
     }
 
     if (health < maxHealth) {
-      final healthRatio = health / maxHealth;
-      final redPaint = Paint()..color = const Color(0xFFFF0000);
-      canvas.drawRect(Rect.fromLTWH(x, y - 10, width, 4), redPaint);
-      final greenPaint = Paint()..color = const Color(0xFF00FF00);
-      canvas.drawRect(
-          Rect.fromLTWH(x, y - 10, width * healthRatio, 4), greenPaint);
+      _drawHealthBar(canvas);
     }
   }
 
   // =============================================
-  // ✅ رسم الأعداء الجدد (Platformer)
+  // ✅ رسم Health Bar
+  // =============================================
+  void _drawHealthBar(Canvas canvas) {
+    final healthRatio = health / maxHealth;
+    canvas.drawRect(
+      Rect.fromLTWH(x, y - 10, width, 4),
+      Paint()..color = const Color(0xFFFF0000),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(x, y - 10, width * healthRatio, 4),
+      Paint()..color = const Color(0xFF00FF00),
+    );
+  }
+
+  // =============================================
+  // ✅ رسم Nature Sprite
+  // =============================================
+  void _drawNatureSprite(Canvas canvas) {
+    String? key;
+
+    switch (type) {
+      case 'bee':
+        key = (flapPhase % 2).floor() == 0 ? 'bee1' : 'bee2';
+        break;
+      case 'bluefish':
+        key = (flapPhase % 2).floor() == 0 ? 'bluefish1' : 'bluefish2';
+        break;
+      case 'frog':
+        key = (flapPhase % 2).floor() == 0 ? 'frog1' : 'frog2';
+        break;
+      case 'ladybug':
+        key = (flapPhase % 2).floor() == 0 ? 'ladybug1' : 'ladybug2';
+        break;
+      case 'mouse':
+        key = (flapPhase % 2).floor() == 0 ? 'mouse1' : 'mouse2';
+        break;
+      case 'saw':
+        key = (flapPhase % 2).floor() == 0 ? 'saw1' : 'saw2';
+        break;
+      case 'blockslime':
+        key = (flapPhase % 2).floor() == 0 ? 'blockslime1' : 'blockslime2';
+        break;
+      case 'cactus_new':
+        key = 'cactus_new';
+        break;
+      case 'cactus_new_large':
+        key = 'cactus_new_large';
+        break;
+    }
+
+    if (key == null) return;
+    final img = ObstacleSpriteCache.get(key);
+
+    if (img == null) {
+      _drawPlaceholder(canvas);
+      return;
+    }
+
+    // ✅ دوران السو (saw)
+    if (type == 'saw') {
+      canvas.save();
+      final cx = x + width / 2;
+      final cy = y + height / 2;
+      canvas.translate(cx, cy);
+      canvas.rotate(rotation);
+      canvas.translate(-cx, -cy);
+    }
+
+    // ✅ اهتزاز طفيف للأعداء الطائرة
+    double bobY = 0;
+    if (type == 'bee' || type == 'bluefish') {
+      bobY = math.sin(hoverPhase) * 3;
+    }
+
+    final imgAspect = img.width / img.height;
+    final targetH = height;
+    final targetW = targetH * imgAspect;
+    final drawX = x + (width - targetW) / 2;
+
+    canvas.drawImageRect(
+      img,
+      Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
+      Rect.fromLTWH(drawX, y + bobY, targetW, targetH),
+      Paint()..filterQuality = FilterQuality.medium,
+    );
+
+    if (type == 'saw') {
+      canvas.restore();
+    }
+  }
+
+  // =============================================
+  // ✅ رسم Platformer Sprite
   // =============================================
   void _drawPlatformerSprite(Canvas canvas) {
     String? key;
@@ -387,26 +635,16 @@ class Obstacle {
     if (key == null) return;
     final img = ObstacleSpriteCache.get(key);
 
-    // ✅ لو الصورة مش متحملة، ارسم placeholder
     if (img == null) {
-      final placeholderColor = _getPlaceholderColor();
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(x, y, width, height),
-          const Radius.circular(4),
-        ),
-        Paint()..color = placeholderColor,
-      );
+      _drawPlaceholder(canvas);
       return;
     }
 
-    // ✅ رسم الصورة
     final imgAspect = img.width / img.height;
     final targetH = height;
     final targetW = targetH * imgAspect;
     final drawX = x + (width - targetW) / 2;
 
-    // ✅ اهتزاز طفيف للأعداء المتحركة
     double bobY = 0;
     if (type == 'fly' || type == 'fish') {
       bobY = math.sin(hoverPhase) * 3;
@@ -422,27 +660,52 @@ class Obstacle {
     );
   }
 
-  Color _getPlaceholderColor() {
+  // =============================================
+  // ✅ Placeholder
+  // =============================================
+  void _drawPlaceholder(Canvas canvas) {
+    Color color;
     switch (type) {
-      case 'slime':
-        return const Color(0xFF4CAF50); // أخضر
-      case 'snail':
-        return const Color(0xFF8D6E63); // بني
-      case 'fly':
-        return const Color(0xFF9C27B0); // بنفسجي
-      case 'fish':
-        return const Color(0xFF2196F3); // أزرق
-      case 'poker':
-        return const Color(0xFFFFC107); // أصفر
-      case 'blocker':
-        return const Color(0xFF795548); // بني غامق
+      case 'bee':
+        color = const Color(0xFFFFC107);
+        break;
+      case 'bluefish':
+        color = const Color(0xFF2196F3);
+        break;
+      case 'frog':
+        color = const Color(0xFF4CAF50);
+        break;
+      case 'ladybug':
+        color = const Color(0xFFE91E63);
+        break;
+      case 'mouse':
+        color = const Color(0xFF9E9E9E);
+        break;
+      case 'saw':
+        color = const Color(0xFF607D8B);
+        break;
+      case 'blockslime':
+        color = const Color(0xFF8BC34A);
+        break;
+      case 'cactus_new':
+      case 'cactus_new_large':
+        color = const Color(0xFF2E7D32);
+        break;
       default:
-        return const Color(0xFF9E9E9E);
+        color = const Color(0xFF9E9E9E);
     }
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(x, y, width, height),
+        const Radius.circular(4),
+      ),
+      Paint()..color = color,
+    );
   }
 
   // =============================================
-  // ✅ رسم الأنماط القديمة (زي ما هو)
+  // ✅ رسم الأنماط القديمة (زي ما هو - بدون تغيير)
   // =============================================
   void _drawCactus(Canvas canvas, Color color, double scale) {
     final paint = Paint()..color = color;

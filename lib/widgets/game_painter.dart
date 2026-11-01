@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/game_state.dart';
 import '../models/power_up.dart';
 import '../services/shop_catalog.dart';
@@ -10,7 +11,10 @@ import '../generated/l10n/app_localizations.dart';
 class GamePainter extends CustomPainter {
   final GameState state;
   final AppLocalizations l10n;
-  final String locale; // ✅ جديد
+  final String locale;
+
+  // ✅ Cache لخلفيات الصور
+  static final Map<String, ui.Image?> _bgImageCache = {};
 
   GamePainter({
     required this.state,
@@ -89,12 +93,52 @@ class GamePainter extends CustomPainter {
     return const Color(0xFFF7F7F7);
   }
 
+  // =============================================
+  // ✅ رسم الخلفية (يدعم الصور والتدرجات)
+  // =============================================
   void _drawBackground(Canvas canvas, double w, double h) {
     final bgData = ShopCatalog.backgrounds[state.currentBackground];
+
+    // ✅ لو الخلفية صورة
+    if (bgData != null && bgData['image'] != null) {
+      final imagePath = bgData['image'] as String;
+
+      if (!_bgImageCache.containsKey(imagePath)) {
+        _bgImageCache[imagePath] = null; // mark as loading
+        _loadBackgroundImage(imagePath);
+      }
+
+      final img = _bgImageCache[imagePath];
+      if (img != null) {
+        // ✅ ارسم الصورة ممتدة على كامل الشاشة
+        canvas.drawImageRect(
+          img,
+          Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
+          Rect.fromLTWH(0, 0, w, h),
+          Paint()..filterQuality = FilterQuality.medium,
+        );
+
+        // ✅ طبقة ليلية فوق الصورة
+        if (state.dayNightPhase > 0) {
+          canvas.drawRect(
+            Rect.fromLTWH(0, 0, w, h),
+            Paint()
+              ..color = const Color(0xFF0A0F28)
+                  .withValues(alpha: state.dayNightPhase * 0.65),
+          );
+        }
+        return;
+      }
+      // لو لسه بيتحمل - نروح للـ fallback
+    }
+
+    // ✅ Fallback: gradient (الخلفيات القديمة)
     Color topDay = const Color(0xFFF0F8FF);
     Color bottomDay = const Color(0xFFF7F7F7);
 
-    if (bgData != null) {
+    if (bgData != null &&
+        bgData['topColor'] != null &&
+        bgData['bottomColor'] != null) {
       final top = bgData['topColor'] as List<int>;
       final bottom = bgData['bottomColor'] as List<int>;
       topDay = Color.fromARGB(255, top[0], top[1], top[2]);
@@ -118,11 +162,23 @@ class GamePainter extends CustomPainter {
     canvas.drawRect(rect, paint);
   }
 
+  Future<void> _loadBackgroundImage(String path) async {
+    try {
+      final data = await rootBundle.load(path);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      _bgImageCache[path] = frame.image;
+      debugPrint('✅ Loaded bg: $path');
+    } catch (e) {
+      debugPrint('❌ Failed to load bg: $path - $e');
+    }
+  }
+
   void _drawGround(Canvas canvas, double w, double groundY) {
     final bgData = ShopCatalog.backgrounds[state.currentBackground];
     Color groundColor;
 
-    if (bgData != null) {
+    if (bgData != null && bgData['groundColor'] != null) {
       final g = bgData['groundColor'] as List<int>;
       groundColor = Color.fromARGB(255, g[0], g[1], g[2]);
     } else {
@@ -182,7 +238,6 @@ class GamePainter extends CustomPainter {
         Paint()..color = color,
       );
 
-      // ✅ استخدام الترجمة
       final tp = TextPainter(
         text: TextSpan(
           text: _getPowerUpName(type),
@@ -197,7 +252,6 @@ class GamePainter extends CustomPainter {
     }
   }
 
-  // ✅ ترجمة أسماء الـ Power-ups
   String _getPowerUpName(String type) {
     switch (type) {
       case 'speed':
@@ -237,7 +291,6 @@ class GamePainter extends CustomPainter {
     const boxW = 130.0;
     const boxH = 35.0;
 
-    // ✅ 1. Best (فوق شمال)
     _drawBadgeBox(
       canvas,
       const Rect.fromLTWH(8, 8, boxW, boxH),
@@ -245,7 +298,6 @@ class GamePainter extends CustomPainter {
       const Color(0xFFFFC107),
     );
 
-    // ✅ 2. Coins (فوق وسط)
     final coins = state.scoreService.coins;
     final coinsX = (w - boxW) / 2;
     _drawBadgeBox(
@@ -255,7 +307,6 @@ class GamePainter extends CustomPainter {
       const Color(0xFFFFC107),
     );
 
-    // ✅ 3. Score (فوق يمين)
     _drawBadgeBox(
       canvas,
       Rect.fromLTWH(w - boxW - 8, 8, boxW, boxH),
@@ -264,12 +315,16 @@ class GamePainter extends CustomPainter {
     );
   }
 
+  // ✅ تنسيق الأرقام الكبيرة (K/M)
   String _formatNumber(int n) {
-    if (n < 1000) return n.toString();
-    return n.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
-        );
+    if (n >= 1000000) {
+      final m = n / 1000000;
+      return m == m.roundToDouble() ? '${m.toInt()}M' : '${m.toStringAsFixed(1)}M';
+    } else if (n >= 1000) {
+      final k = n / 1000;
+      return k == k.roundToDouble() ? '${k.toInt()}K' : '${k.toStringAsFixed(1)}K';
+    }
+    return n.toString();
   }
 
   void _drawBadgeBox(Canvas canvas, Rect rect, String text, Color borderColor) {
@@ -431,7 +486,6 @@ class GamePainter extends CustomPainter {
         final data = ShopCatalog.badges[achId] ??
             ShopCatalog.weaponAchievements[achId];
         if (data != null) {
-          // ✅ ترجمة اسم الإنجاز باستخدام locale
           final achName = ItemTranslations.getName(
             achId,
             locale,

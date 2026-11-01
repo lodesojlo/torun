@@ -7,6 +7,7 @@ import '../widgets/game_loop.dart';
 import '../services/score_service.dart';
 import '../services/sound_service.dart';
 import '../generated/l10n/app_localizations.dart';
+import '../services/shop_catalog.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -21,6 +22,7 @@ class _GameScreenState extends State<GameScreen> {
 
   GameStatus _lastStatus = GameStatus.idle;
   String _lastWeapon = 'weapon_none';
+  String _lastWorld = 'world_normal'; // ✅ جديد
 
   final FocusNode _keyboardFocusNode = FocusNode();
 
@@ -41,6 +43,7 @@ class _GameScreenState extends State<GameScreen> {
     );
     _lastStatus = _gameState.status;
     _lastWeapon = _gameState.equippedWeapon;
+    _lastWorld = _gameState.currentWorld; // ✅
     _gameState.addListener(_onGameStateChanged);
     ObstacleSpriteCache.preload();
     _setLandscape();
@@ -53,9 +56,11 @@ class _GameScreenState extends State<GameScreen> {
   void _onGameStateChanged() {
     final newStatus = _gameState.status;
     if (newStatus != _lastStatus ||
-        _gameState.equippedWeapon != _lastWeapon) {
+        _gameState.equippedWeapon != _lastWeapon ||
+        _gameState.currentWorld != _lastWorld) {
       _lastStatus = newStatus;
       _lastWeapon = _gameState.equippedWeapon;
+      _lastWorld = _gameState.currentWorld;
       if (mounted) setState(() {});
     }
   }
@@ -167,6 +172,44 @@ class _GameScreenState extends State<GameScreen> {
     super.dispose();
   }
 
+  // =============================================
+  // ✅ معلومات العالم الحالي (للعرض في HUD)
+  // =============================================
+  String _getWorldDisplayName() {
+    final worldData = ShopCatalog.worlds[_gameState.currentWorld];
+    return worldData?['name'] as String? ?? 'عادي';
+  }
+
+  IconData _getWorldIcon() {
+    final worldData = ShopCatalog.worlds[_gameState.currentWorld];
+    final iconName = worldData?['icon'] as String? ?? 'public';
+    switch (iconName) {
+      case 'public': return Icons.public;
+      case 'forest': return Icons.forest;
+      case 'water': return Icons.water;
+      case 'nights_stay': return Icons.nights_stay;
+      case 'landscape': return Icons.landscape;
+      case 'terrain': return Icons.terrain;
+      case 'workspace_premium': return Icons.workspace_premium;
+      default: return Icons.public;
+    }
+  }
+
+  Color _getWorldColor() {
+    final worldData = ShopCatalog.worlds[_gameState.currentWorld];
+    final iconName = worldData?['icon'] as String? ?? 'public';
+    switch (iconName) {
+      case 'public': return const Color(0xFF4A90E2);
+      case 'forest': return const Color(0xFF4CAF50);
+      case 'water': return const Color(0xFF0288D1);
+      case 'nights_stay': return const Color(0xFF6B21A8);
+      case 'landscape': return const Color(0xFFD4A574);
+      case 'terrain': return const Color(0xFF6B8E23);
+      case 'workspace_premium': return const Color(0xFFFFD700);
+      default: return const Color(0xFF0D6EFD);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -206,6 +249,7 @@ class _GameScreenState extends State<GameScreen> {
               body: Stack(
                 fit: StackFit.expand,
                 children: [
+                  // ✅ Game Canvas
                   Listener(
                     onPointerDown: (event) {
                       _handleTouchStart(event.localPosition, screenSize);
@@ -235,6 +279,7 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
 
+                  // ✅ Top Bar (Back, World Badge, Pause)
                   Positioned(
                     top: 0,
                     left: 0,
@@ -248,6 +293,12 @@ class _GameScreenState extends State<GameScreen> {
                               icon: Icons.arrow_back,
                               onTap: () => Navigator.of(context).pop(),
                             ),
+                            const SizedBox(width: 8),
+
+                            // ✅ مؤشر العالم الحالي
+                            if (_gameState.status == GameStatus.running)
+                              _buildWorldBadge(),
+
                             const Spacer(),
                             if (_gameState.status == GameStatus.running)
                               _buildIconButton(
@@ -265,15 +316,17 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
 
+                  // ✅ مؤشر الضرب
                   if (_isFiring)
                     Positioned(
                       right: 20,
-                      top: 20,
+                      top: 60,
                       child: SafeArea(
                         child: _FiringIndicator(text: l10n.firing),
                       ),
                     ),
 
+                  // ✅ تعليمات اللعب
                   if (_gameState.status == GameStatus.idle ||
                       _gameState.status == GameStatus.gameOver)
                     Positioned(
@@ -316,6 +369,39 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  // =============================================
+  // ✅ مؤشر العالم (Badge)
+  // =============================================
+  Widget _buildWorldBadge() {
+    final icon = _getWorldIcon();
+    final color = _getWorldColor();
+    final name = _getWorldDisplayName();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.6), width: 2),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 6),
+          Text(
+            name,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildIconButton({
     required IconData icon,
     required VoidCallback onTap,
@@ -336,7 +422,7 @@ class _GameScreenState extends State<GameScreen> {
 }
 
 // =============================================
-// ✅ مؤشر الضرب (نابض أحمر) — محدّث
+// ✅ مؤشر الضرب (نابض أحمر)
 // =============================================
 class _FiringIndicator extends StatefulWidget {
   final String text;

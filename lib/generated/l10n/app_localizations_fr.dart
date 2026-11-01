@@ -271,4 +271,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get scoreDisplay => 'Score';
+
+  @override
+  String get categoryEnvironments => 'Environnements';
+
+  @override
+  String get categoryWorlds => 'Mondes';
 }

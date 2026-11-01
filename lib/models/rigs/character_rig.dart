@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// الواجهة الأساسية لأي هيكل عظمي للشخصية
-/// كل هيكل بيوفر update() للحركة و draw() للرسم
 abstract class CharacterRig {
   void update({
     required double runPhase,
@@ -21,19 +20,19 @@ abstract class CharacterRig {
   );
 }
 
-/// هيكل بشري كامل (رأس + جسم + ذراعين + رجلين)
-/// - انتقالات سلسة عبر Linear Interpolation (Lerp)
-/// - Paint objects مخزنة مسبقاً (تحسين أداء ضخم)
-/// - ظل أرضي تلقائي
-/// - دعم تنورة اختيارية (للنساء)
+/// هيكل بشري كامل (رأس + جسم + ذراعين + رجلين + تاج + عباءة)
 class HumanRig extends CharacterRig {
   final double headRatio;
   final double torsoRatio;
   final double legRatio;
   final bool hasSkirt;
+  final bool hasCrown;      // ✅ تاج
+  final bool hasCape;       // ✅ عباءة
+  final Color crownColor;   // ✅ لون التاج
+  final Color capeColor;    // ✅ لون العباءة
   final double lerpSpeed;
 
-  // القيم الحالية (بتتحرك تدريجياً)
+  // القيم الحالية
   double _leftArmAngle = 0;
   double _rightArmAngle = 0;
   double _leftLegAngle = 0;
@@ -41,8 +40,9 @@ class HumanRig extends CharacterRig {
   double _bodyLean = 0;
   double _bodyBob = 0;
   double _headTilt = 0;
+  double _capeWave = 0;     // ✅ موجة العباءة
 
-  // القيم المستهدفة (بتتحدد كل frame)
+  // القيم المستهدفة
   double _tLeftArm = 0;
   double _tRightArm = 0;
   double _tLeftLeg = 0;
@@ -51,7 +51,7 @@ class HumanRig extends CharacterRig {
   double _tBodyBob = 0;
   double _tHeadTilt = 0;
 
-  // ✅ Paint objects مخزنة (لا تخصيص جديد في كل frame)
+  // Paint objects مخزنة
   final Paint _limbPaint = Paint();
   final Paint _torsoPaint = Paint();
   final Paint _headPaint = Paint();
@@ -61,12 +61,19 @@ class HumanRig extends CharacterRig {
     ..style = PaintingStyle.stroke;
   final Paint _shadowPaint = Paint()
     ..color = Colors.black.withValues(alpha: 0.15);
+  final Paint _crownPaint = Paint();     // ✅
+  final Paint _capePaint = Paint();      // ✅
+  final Paint _gemPaint = Paint();       // ✅
 
   HumanRig({
     this.headRatio = 0.24,
     this.torsoRatio = 0.38,
     this.legRatio = 0.38,
     this.hasSkirt = false,
+    this.hasCrown = false,
+    this.hasCape = false,
+    this.crownColor = const Color(0xFFFFD700),
+    this.capeColor = const Color(0xFF4A148C),
     this.lerpSpeed = 0.35,
   });
 
@@ -114,7 +121,10 @@ class HumanRig extends CharacterRig {
       _tHeadTilt = s * 0.05;
     }
 
-    // ✅ انتقال سلس بدل الانتقال الفوري (يخلي الحركة طبيعية جداً)
+    // ✅ تحريك العباءة
+    _capeWave = math.sin(runPhase * 1.5) * 3;
+
+    // انتقال سلس
     _leftArmAngle += (_tLeftArm - _leftArmAngle) * lerpSpeed;
     _rightArmAngle += (_tRightArm - _rightArmAngle) * lerpSpeed;
     _leftLegAngle += (_tLeftLeg - _leftLegAngle) * lerpSpeed;
@@ -153,6 +163,11 @@ class HumanRig extends CharacterRig {
       ),
       _shadowPaint,
     );
+
+    // ✅ العباءة (خلف الجسم)
+    if (hasCape) {
+      _drawCape(canvas, torsoLeft, torsoTop, torsoW, torsoH, legH);
+    }
 
     // دوران الجسم
     canvas.save();
@@ -215,7 +230,7 @@ class HumanRig extends CharacterRig {
 
     canvas.restore();
 
-    // ✅ الرأس (خارج دوران الجسم ليبقى مستقيماً)
+    // ✅ الرأس
     _headPaint.color = skin;
     final headCx = cx + math.sin(_headTilt) * headD * 0.15;
     final headCy = bounds.top + headD / 2 + _bodyBob;
@@ -247,9 +262,124 @@ class HumanRig extends CharacterRig {
       false,
       _smilePaint,
     );
+
+    // ✅ التاج (فوق الرأس)
+    if (hasCrown) {
+      _drawCrown(canvas, headCx, headCy - headD * 0.5, headD);
+    }
   }
 
-  /// رسم طرف واحد (ذراع أو رجل) - يستخدم Paint مخزن
+  // =============================================
+  // ✅ رسم التاج
+  // =============================================
+  void _drawCrown(Canvas canvas, double cx, double baseY, double headD) {
+    final crownW = headD * 0.85;
+    final crownH = headD * 0.45;
+
+    _crownPaint.color = crownColor;
+
+    // ✅ قاعدة التاج
+    final baseRect = Rect.fromLTWH(
+      cx - crownW / 2,
+      baseY - crownH * 0.15,
+      crownW,
+      crownH * 0.25,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(baseRect, const Radius.circular(2)),
+      _crownPaint,
+    );
+
+    // ✅ 3 قمم للتاج
+    for (int i = -1; i <= 1; i++) {
+      final peakX = cx + i * crownW * 0.32;
+      final peakY = baseY - crownH;
+
+      final path = Path()
+        ..moveTo(peakX - crownW * 0.13, baseY - crownH * 0.1)
+        ..lineTo(peakX, peakY)
+        ..lineTo(peakX + crownW * 0.13, baseY - crownH * 0.1)
+        ..close();
+      canvas.drawPath(path, _crownPaint);
+    }
+
+    // ✅ جواهر ملونة على كل قمة
+    final gemColors = [
+      const Color(0xFFFF1744), // أحمر
+      const Color(0xFF29B6F6), // أزرق
+      const Color(0xFF00E676), // أخضر
+    ];
+    _gemPaint.color = gemColors[1]; // أزرق في الوسط
+
+    for (int i = -1; i <= 1; i++) {
+      final gemX = cx + i * crownW * 0.32;
+      final gemY = baseY - crownH * 0.95;
+      _gemPaint.color = gemColors[i + 1];
+      canvas.drawCircle(Offset(gemX, gemY), headD * 0.06, _gemPaint);
+    }
+  }
+
+  // =============================================
+  // ✅ رسم العباءة
+  // =============================================
+  void _drawCape(
+    Canvas canvas,
+    double torsoLeft,
+    double torsoTop,
+    double torsoW,
+    double torsoH,
+    double legH,
+  ) {
+    _capePaint.color = capeColor;
+
+    final capeTop = torsoTop + torsoH * 0.1;
+    final capeBottom = torsoTop + torsoH + legH * 0.4;
+    final capeLeftBase = torsoLeft - torsoW * 0.15;
+    final capeRightBase = torsoLeft + torsoW + torsoW * 0.15;
+
+    // ✅ حدود العباءة مع موجات
+    final leftWave = _capeWave * 1.2;
+    final rightWave = _capeWave * 0.8;
+
+    final path = Path()
+      ..moveTo(torsoLeft + torsoW * 0.15, capeTop)
+      ..lineTo(torsoLeft + torsoW * 0.85, capeTop)
+      ..quadraticBezierTo(
+        capeRightBase + rightWave,
+        capeBottom * 0.7,
+        capeRightBase + rightWave * 1.5,
+        capeBottom,
+      )
+      ..lineTo(capeLeftBase + leftWave * 1.5, capeBottom)
+      ..quadraticBezierTo(
+        capeLeftBase + leftWave,
+        capeBottom * 0.7,
+        torsoLeft + torsoW * 0.15,
+        capeTop,
+      )
+      ..close();
+
+    canvas.drawPath(path, _capePaint);
+
+    // ✅ حدود العباءة (لون أغمق)
+    final borderPaint = Paint()
+      ..color = capeColor.withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawPath(path, borderPaint);
+
+    // ✅ خطوط ذهبية على العباءة (تفاصيل ملكية)
+    final goldTrimPaint = Paint()
+      ..color = crownColor.withValues(alpha: 0.5)
+      ..strokeWidth = 1;
+    canvas.drawLine(
+      Offset(torsoLeft + torsoW * 0.2, capeTop + 3),
+      Offset(torsoLeft + torsoW * 0.8, capeTop + 3),
+      goldTrimPaint,
+    );
+  }
+
+  /// رسم طرف واحد
   void _drawLimb(
     Canvas canvas, {
     required Offset pivot,
@@ -272,13 +402,10 @@ class HumanRig extends CharacterRig {
 }
 
 /// هيكل سيارة (جسم + عجلات دوارة)
-/// - عجلات تدور باستمرار
-/// - اهتزاز خفيف للجسم
 class CarRig extends CharacterRig {
   double _wheelPhase = 0;
   double _bodyBob = 0;
 
-  // ✅ Paint objects مخزنة
   final Paint _tirePaint = Paint()..color = const Color(0xFF111111);
   final Paint _rimPaint = Paint()..color = const Color(0xFF666666);
   final Paint _spokePaint = Paint()
@@ -330,7 +457,7 @@ class CarRig extends CharacterRig {
       _shadowPaint,
     );
 
-    // ✅ العجلات (خلف الجسم)
+    // ✅ العجلات
     _drawWheel(
       canvas,
       Offset(bounds.left + w * 0.22, bodyY + bodyH + h * 0.1),
@@ -367,7 +494,7 @@ class CarRig extends CharacterRig {
       _roofPaint,
     );
 
-    // ✅ الزجاج الأمامي والخلفي
+    // ✅ الزجاج
     canvas.drawRect(
       Rect.fromLTWH(
         bounds.left + w * 0.29,
@@ -387,7 +514,7 @@ class CarRig extends CharacterRig {
       _glassPaint,
     );
 
-    // ✅ المصباح الأمامي
+    // ✅ المصباح
     canvas.drawCircle(
       Offset(bounds.left + w * 0.9, bodyY + bodyH * 0.4),
       w * 0.04,

@@ -53,6 +53,20 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // =============================================
+  // ✅ تنسيق العملات (K/M)
+  // =============================================
+  String _formatCoins(int coins) {
+    if (coins >= 1000000) {
+      final m = coins / 1000000;
+      return m == m.roundToDouble() ? '${m.toInt()}M' : '${m.toStringAsFixed(1)}M';
+    } else if (coins >= 1000) {
+      final k = coins / 1000;
+      return k == k.roundToDouble() ? '${k.toInt()}K' : '${k.toStringAsFixed(1)}K';
+    }
+    return coins.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -131,13 +145,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildStatChip(
-                        '💰 $coins',
-                        const Color(0xFFFFC107),
+                        icon: Icons.monetization_on,
+                        value: _formatCoins(coins),
+                        color: const Color(0xFFFFC107),
                       ),
                       const SizedBox(width: 12),
                       _buildStatChip(
-                        '🏆 $highScore',
-                        const Color(0xFF0D6EFD),
+                        icon: Icons.emoji_events,
+                        value: _formatCoins(highScore),
+                        color: const Color(0xFF0D6EFD),
                       ),
                     ],
                   ),
@@ -226,7 +242,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatChip(String text, Color color) {
+  // =============================================
+  // ✅ Stat Chip
+  // =============================================
+  Widget _buildStatChip({
+    required IconData icon,
+    required String value,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -234,17 +257,27 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color, width: 2),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 6),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  // =============================================
+  // ✅ Menu Button
+  // =============================================
   Widget _buildMenuButton({
     required IconData icon,
     required String label,

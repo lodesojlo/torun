@@ -621,6 +621,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Score'**
   String get scoreDisplay;
+
+  /// No description provided for @categoryEnvironments.
+  ///
+  /// In en, this message translates to:
+  /// **'Environments'**
+  String get categoryEnvironments;
+
+  /// No description provided for @categoryWorlds.
+  ///
+  /// In en, this message translates to:
+  /// **'Worlds'**
+  String get categoryWorlds;
 }
 
 class _AppLocalizationsDelegate

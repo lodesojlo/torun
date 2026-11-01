@@ -5,28 +5,28 @@ import 'package:flutter/material.dart';
 class Zombie {
   static const Map<String, Map<String, dynamic>> types = {
     'walker': {
-      'name': '🧟 ماشي',
+      'name': 'ماشي',
       'health': 2,
       'speed': 1.5,
       'color': '#4a7c4a',
       'damage': 1,
     },
     'runner': {
-      'name': '🏃 جري',
+      'name': 'جري',
       'health': 1,
       'speed': 3.0,
       'color': '#7c4a4a',
       'damage': 1,
     },
     'shooter': {
-      'name': '🔫 رامي',
+      'name': 'رامي',
       'health': 3,
       'speed': 0.8,
       'color': '#4a4a7c',
       'damage': 1,
     },
     'tank': {
-      'name': '🛡️ مدرع',
+      'name': 'مدرع',
       'health': 6,
       'speed': 0.5,
       'color': '#666666',

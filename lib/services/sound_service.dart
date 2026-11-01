@@ -27,6 +27,22 @@ class SoundService {
     'pause', 'resume', 'click',
   ];
 
+  // ✅ Pack من assets (مش بيتولد برمجياً)
+  static const List<String> _assetPacks = ['sounds_platformer'];
+
+  // ✅ خريطة أسماء الأصوات لـ platformer pack
+  static const Map<String, String> _platformerSoundMap = {
+    'jump': 'sfx_jump.ogg',
+    'duck': 'sfx_jump-high.ogg',
+    'score': 'sfx_coin.ogg',
+    'game_over': 'sfx_hurt.ogg',
+    'new_high_score': 'sfx_magic.ogg',
+    'milestone': 'sfx_gem.ogg',
+    'pause': 'sfx_select.ogg',
+    'resume': 'sfx_select.ogg',
+    'click': 'sfx_select.ogg',
+  };
+
   Future<void> initialize() async {
     if (_initialized) return;
     if (_initializing != null) return _initializing;
@@ -51,9 +67,10 @@ class SoundService {
     }
   }
 
-  /// توليد pack واحد فقط (في الخلفية)
   Future<void> _ensurePackGenerated(String pack) async {
     if (_generatedPacks.contains(pack)) return;
+    // ✅ لو asset pack، متولّدش
+    if (_assetPacks.contains(pack)) return;
 
     try {
       for (final sound in _allSounds) {
@@ -69,7 +86,6 @@ class SoundService {
             await file.writeAsBytes(bytes);
           }
         }
-        // ✅ اسمح للـ UI يتنفس
         await Future.delayed(const Duration(milliseconds: 1));
       }
       _generatedPacks.add(pack);
@@ -84,7 +100,18 @@ class SoundService {
     if (!_initialized) return;
 
     try {
-      // ✅ ولد الـ pack لو مش موجود (في الخلفية)
+      // ✅ Asset pack (sounds_platformer)
+      if (_assetPacks.contains(_currentPack)) {
+        final fileName = _platformerSoundMap[soundName];
+        if (fileName == null) return;
+
+        final player = _players[soundName] ??= AudioPlayer();
+        await player.stop();
+        await player.play(AssetSource('sounds/platformer/$fileName'));
+        return;
+      }
+
+      // ✅ Generated pack (القديم)
       if (!_generatedPacks.contains(_currentPack)) {
         unawaited(_ensurePackGenerated(_currentPack));
         return;
@@ -113,8 +140,10 @@ class SoundService {
   void setPack(String pack) {
     if (_currentPack == pack) return;
     _currentPack = pack;
-    // ✅ ولد الـ pack الجديد في الخلفية
-    unawaited(_ensurePackGenerated(pack));
+    // ✅ لو مش asset pack، ولّد في الخلفية
+    if (!_assetPacks.contains(pack)) {
+      unawaited(_ensurePackGenerated(pack));
+    }
   }
 
   String getPack() => _currentPack;

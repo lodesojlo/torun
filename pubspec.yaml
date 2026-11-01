@@ -40,7 +40,7 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
-  generate: true                          # ✅ السطر الجديد
+  generate: true
   assets:
     - assets/images/
     - assets/images/characters/
@@ -56,4 +56,11 @@ flutter:
     - assets/images/characters/kenney/platformer/female/
     - assets/images/characters/kenney/platformer/adventurer/
     - assets/images/characters/kenney/platformer/soldier/
+    - assets/images/obstacles/
     - assets/images/obstacles/platformer/
+    - assets/images/obstacles/nature/
+    - assets/images/obstacles/cactus_platformer/
+    - assets/images/backgrounds/
+    - assets/sounds/
+    - assets/sounds/platformer/
+    

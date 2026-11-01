@@ -6,7 +6,7 @@ import 'game_painter.dart';
 
 class GameLoop extends StatefulWidget {
   final GameState state;
-  final AppLocalizations l10n; // ✅ جديد
+  final AppLocalizations l10n;
 
   const GameLoop({super.key, required this.state, required this.l10n});
 

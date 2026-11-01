@@ -67,9 +67,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: GameConstants.darkColor,
-        title: Text(
-          '⚠️ ${l10n.dangerZone}',
-          style: const TextStyle(color: GameConstants.dangerColor),
+        title: Row(
+          children: [
+            const Icon(
+              Icons.warning,
+              color: GameConstants.dangerColor,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              l10n.dangerZone,
+              style: const TextStyle(color: GameConstants.dangerColor),
+            ),
+          ],
         ),
         content: Text(
           l10n.resetAllConfirm,
@@ -112,16 +122,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: GameConstants.darkColor,
         foregroundColor: Colors.white,
-        title: Text('⚙️ ${l10n.settings}',
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.settings, color: Colors.white, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              l10n.settings,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // =============================================
-          // ✅ اللغة (جديد)
+          // ✅ اللغة
           // =============================================
-          _buildSectionTitle('🌍 ${l10n.language}'),
+          _buildSectionTitle(
+            icon: Icons.language,
+            title: l10n.language,
+          ),
           Container(
             decoration: BoxDecoration(
               color: const Color(0xFF0F3460),
@@ -130,13 +152,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 _buildLanguageOption(
-                    '🇸🇦 ${l10n.arabic}', 'ar', currentLang),
+                  label: l10n.arabic,
+                  code: 'ar',
+                  current: currentLang,
+                  icon: Icons.translate,
+                ),
                 const Divider(color: Colors.white24, height: 1),
                 _buildLanguageOption(
-                    '🇬🇧 ${l10n.english}', 'en', currentLang),
+                  label: l10n.english,
+                  code: 'en',
+                  current: currentLang,
+                  icon: Icons.translate,
+                ),
                 const Divider(color: Colors.white24, height: 1),
                 _buildLanguageOption(
-                    '🇫🇷 ${l10n.french}', 'fr', currentLang),
+                  label: l10n.french,
+                  code: 'fr',
+                  current: currentLang,
+                  icon: Icons.translate,
+                ),
               ],
             ),
           ),
@@ -145,7 +179,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // =============================================
           // ✅ الصوت
           // =============================================
-          _buildSectionTitle('🔊 ${l10n.sound}'),
+          _buildSectionTitle(
+            icon: Icons.volume_up,
+            title: l10n.sound,
+          ),
           _buildSwitchTile(
             title: l10n.soundOn,
             value: _soundEnabled,
@@ -159,32 +196,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // =============================================
           // ✅ الإحصائيات
           // =============================================
-          _buildSectionTitle('📊 ${l10n.gamesPlayed}'),
-          _buildStatTile(
-            l10n.gamesPlayed,
-            '${_scoreService.stats['total_deaths'] ?? 0}',
+          _buildSectionTitle(
+            icon: Icons.bar_chart,
+            title: l10n.gamesPlayed,
           ),
           _buildStatTile(
-            l10n.highScore,
-            '${_scoreService.highScore}',
+            icon: Icons.sports_esports,
+            label: l10n.gamesPlayed,
+            value: '${_scoreService.stats['total_deaths'] ?? 0}',
           ),
           _buildStatTile(
-            l10n.totalCoins,
-            '${_scoreService.totalCoinsEarned}',
+            icon: Icons.emoji_events,
+            label: l10n.highScore,
+            value: '${_scoreService.highScore}',
+          ),
+          _buildStatTile(
+            icon: Icons.monetization_on,
+            label: l10n.totalCoins,
+            value: '${_scoreService.totalCoinsEarned}',
           ),
           const SizedBox(height: 20),
 
           // =============================================
           // ✅ منطقة الخطر
           // =============================================
-          _buildSectionTitle('⚠️ ${l10n.dangerZone}'),
+          _buildSectionTitle(
+            icon: Icons.warning,
+            title: l10n.dangerZone,
+          ),
           _buildDangerButton(
-            label: '🗑️ ${l10n.resetStats}',
+            icon: Icons.delete_sweep,
+            label: l10n.resetStats,
             onTap: _resetStats,
           ),
           const SizedBox(height: 8),
           _buildDangerButton(
-            label: '💥 ${l10n.resetAll}',
+            icon: Icons.delete_forever,
+            label: l10n.resetAll,
             onTap: _resetAll,
           ),
           const SizedBox(height: 20),
@@ -202,8 +250,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // =============================================
   // ✅ خيار اللغة
-  Widget _buildLanguageOption(String label, String code, String current) {
+  // =============================================
+  Widget _buildLanguageOption({
+    required String label,
+    required String code,
+    required String current,
+    required IconData icon,
+  }) {
     final isSelected = current == code;
 
     return InkWell(
@@ -216,6 +271,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         child: Row(
           children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? GameConstants.primaryColor
+                  : Colors.white.withValues(alpha: 0.6),
+              size: 20,
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
@@ -240,20 +303,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  // =============================================
+  // ✅ عنوان قسم
+  // =============================================
+  Widget _buildSectionTitle({
+    required IconData icon,
+    required String title,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: GameConstants.primaryColor,
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Row(
+        children: [
+          Icon(icon, color: GameConstants.primaryColor, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              color: GameConstants.primaryColor,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  // =============================================
+  // ✅ Switch Tile
+  // =============================================
   Widget _buildSwitchTile({
     required String title,
     required bool value,
@@ -273,7 +351,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildStatTile(String label, String value) {
+  // =============================================
+  // ✅ Stat Tile (أيقونة + label + value)
+  // =============================================
+  Widget _buildStatTile({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -282,37 +367,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
+          Icon(
+            icon,
+            color: GameConstants.secondaryColor,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7))),
-          Text(value,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)),
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
         ],
       ),
     );
   }
 
+  // =============================================
+  // ✅ Danger Button (أيقونة + label)
+  // =============================================
   Widget _buildDangerButton({
+    required IconData icon,
     required String label,
     required VoidCallback onTap,
   }) {
     return SizedBox(
       width: double.infinity,
+      height: 48,
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: GameConstants.dangerColor,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
         ),
-        child: Text(label,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
     );
   }

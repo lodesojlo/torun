@@ -85,6 +85,7 @@ class GameState extends ChangeNotifier {
   // =============================================
   String currentCharacter = 'char_default';
   String currentSkin = 'skin_classic';
+  String currentWorld = 'world_normal';
   String currentBackground = 'bg_day';
   String currentParticles = 'particles_none';
   String currentBadge = 'badge_rookie';
@@ -121,17 +122,55 @@ class GameState extends ChangeNotifier {
     _loadEquipped();
   }
 
+  // =============================================
+  // ✅ تحميل العناصر المُجهزة
+  // =============================================
   void _loadEquipped() {
     final eq = scoreService.equippedItems;
     currentCharacter = eq['character'] ?? 'char_default';
     currentSkin = eq['skin'] ?? 'skin_classic';
+    currentWorld = eq['world'] ?? 'world_normal';
     currentBackground = eq['background'] ?? 'bg_day';
     currentParticles = eq['particles'] ?? 'particles_none';
     currentBadge = eq['badge'] ?? 'badge_rookie';
     equippedWeapon = eq['weapons'] ?? 'weapon_none';
     currentSounds = eq['sounds'] ?? 'sounds_default';
+
+    // ✅ تطبيق العالم (الخلفية + الأعداء + الأصوات + المؤثرات)
+    _applyWorldData();
+
     particleSystem.setEffect(currentParticles);
     soundService.setPack(currentSounds);
+  }
+
+  // =============================================
+  // ✅ تطبيق بيانات العالم
+  // =============================================
+  void _applyWorldData() {
+    final worldData = ShopCatalog.worlds[currentWorld];
+    if (worldData == null) return;
+
+    // ✅ تطبيق الخلفية والأعداء والأصوات والمؤثرات من العالم
+    currentBackground =
+        worldData['background'] as String? ?? 'bg_day';
+    currentParticles =
+        worldData['particles'] as String? ?? 'particles_none';
+    currentSounds =
+        worldData['sounds'] as String? ?? 'sounds_default';
+  }
+
+  // =============================================
+  // ✅ تطبيق إعدادات العالم على اللاعب
+  // =============================================
+  void _applyWorldToPlayer() {
+    if (player == null) return;
+    final worldData = ShopCatalog.worlds[currentWorld];
+    if (worldData == null) return;
+
+    player!.gravityMultiplier =
+        (worldData['gravityMultiplier'] as num?)?.toDouble() ?? 1.0;
+    player!.jumpMultiplier =
+        (worldData['jumpMultiplier'] as num?)?.toDouble() ?? 1.0;
   }
 
   void refreshEquipped() {
@@ -139,6 +178,7 @@ class GameState extends ChangeNotifier {
     if (player != null) {
       player!.setCharacter(currentCharacter);
       player!.setSkin(currentSkin);
+      _applyWorldToPlayer();
     }
     notifyListeners();
   }
@@ -161,6 +201,7 @@ class GameState extends ChangeNotifier {
       characterId: currentCharacter,
       skinId: currentSkin,
     );
+    _applyWorldToPlayer();
     _initBackground();
   }
 
@@ -214,6 +255,18 @@ class GameState extends ChangeNotifier {
     speedIncrement = settings['speedIncrement'] as double;
     speedIncrementTimer = 0;
 
+    // ✅ تطبيق سرعة العالم
+    final worldData = ShopCatalog.worlds[currentWorld];
+    if (worldData != null) {
+      final speedMult =
+          (worldData['speedMultiplier'] as num?)?.toDouble() ?? 1.0;
+      gameSpeed *= speedMult;
+      maxSpeed *= speedMult;
+    }
+
+    // ✅ تطبيق بيانات العالم (خلفية + أعداء + أصوات + مؤثرات)
+    _applyWorldData();
+
     obstacles.clear();
     groundFeatures.clear();
     bullets.clear();
@@ -245,6 +298,9 @@ class GameState extends ChangeNotifier {
       skinId: currentSkin,
     );
 
+    // ✅ تطبيق إعدادات العالم على اللاعب
+    _applyWorldToPlayer();
+
     dayNightTarget = 0;
     dayNightPhase = 0;
     isNight = false;
@@ -268,7 +324,6 @@ class GameState extends ChangeNotifier {
   }
 
   void gameOver() {
-    // ✅ أضف السطرين دول
     if (player != null) {
       player!.isDead = true;
     }
@@ -646,7 +701,7 @@ class GameState extends ChangeNotifier {
       ));
     }
 
-    // ✅ توليد العقبات
+    // ✅ توليد العقبات (من العالم)
     spawnTimer += gameSpeed.round();
     if (spawnTimer >= nextSpawnDistance) {
       spawnTimer = 0;
@@ -656,14 +711,29 @@ class GameState extends ChangeNotifier {
           (minD.toDouble() + math.Random().nextDouble() * (maxD - minD))
               .toDouble();
 
-      final equipped = scoreService.getEquipped('obstacles');
+      // ✅ تحديد نمط الأعداء من العالم
+      final worldData = ShopCatalog.worlds[currentWorld];
+      final obsId = worldData?['obstacles'] as String? ?? 'obs_cactus';
+
       String obstacleStyle = 'cactus';
-      if (equipped == 'obs_rocks') {
-        obstacleStyle = 'rocks';
-      } else if (equipped == 'obs_cars') {
-        obstacleStyle = 'cars';
-      } else if (equipped == 'obs_drones') {
-        obstacleStyle = 'drones';
+      switch (obsId) {
+        case 'obs_rocks':
+          obstacleStyle = 'rocks';
+          break;
+        case 'obs_cars':
+          obstacleStyle = 'cars';
+          break;
+        case 'obs_drones':
+          obstacleStyle = 'drones';
+          break;
+        case 'obs_platformer':
+          obstacleStyle = 'platformer';
+          break;
+        case 'obs_nature':
+          obstacleStyle = 'nature';
+          break;
+        default:
+          obstacleStyle = 'cactus';
       }
 
       obstacles.add(Obstacle(

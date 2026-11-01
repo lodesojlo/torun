@@ -93,5 +93,7 @@
   "powerUpSlowMotion": "🐢 بطء الوقت",
   "million": "مليون",
   "coinsShort": "عملة",
-  "scoreDisplay": "النتيجة"
+  "scoreDisplay": "النتيجة",
+  "categoryEnvironments": "البيئات",
+  "categoryWorlds": "العوالم"
 }
